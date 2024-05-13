@@ -1,0 +1,306 @@
+services:
+  mongodb:
+    image: mongo:6.0.15
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: 'root'
+      MONGO_INITDB_ROOT_PASSWORD: 'password'
+    ports:
+      - "27017:27017"
+  timescale:
+    image: timescale/timescaledb-ha:pg16
+    environment:
+      POSTGRES_DB: 'tsdb'
+      POSTGRES_USER: 'root'
+      POSTGRES_PASSWORD: 'password'
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: "pg_isready -U root -d tsdb"
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  timescale-migrator:
+    build:
+      context: timescale
+      dockerfile: Dockerfile
+    depends_on:
+      timescale:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://root:password@host.docker.internal:5432/tsdb
+  query-engine:
+    image: blocktorch/query-engine:0.0.4-SNAPSHOT
+    ports:
+      - "8007:8000"
+    environment:
+      # secrets
+      BASIC_AUTH_INTERNAL_USERNAME: 'admin'
+      BASIC_AUTH_INTERNAL_PASSWORD: 'admin'
+      QUERIES_API_AUTH_USER: 'admin'
+      QUERIES_API_AUTH_PASSWORD: 'admin'
+      METRICS_API_AUTH_USER: 'admin'
+      METRICS_API_AUTH_PASSWORD: 'admin'
+      ALERTS_API_AUTH_USER: 'admin'
+      ALERTS_API_AUTH_PASSWORD: 'admin'
+
+      PORT: '8000'
+      SERVICE_NAME: 'query-engine'
+      QUERIES_API_URL: 'http://host.docker.internal:8001/api/internal/queries'
+      PROMETHEUS_GATEWAY_URL: 'prometheus-metrics-gateway:9091'
+      METRICS_API_URL: 'http://host.docker.internal:8008/api/internal/metrics'
+      QUERY_PREVIEW_SETTINGS_MIN_TICKS: '5'
+      QUERY_PREVIEW_SETTINGS_MAX_TICKS: '300'
+      QUERY_PREVIEW_SETTINGS_MIN_RANGE_IN_MIN: '10'
+      QUERY_PREVIEW_SETTINGS_MAX_RANGE_IN_MIN: '10080'
+      TRIGGER_QUERY_MAX_THREADS: '30'
+    depends_on:
+      - mongodb
+      - metrics-subgraph
+      - query-subgraph
+  metric-ingestion-service:
+    image: blocktorch/metric-ingestion-service:0.1.8-SNAPSHOT
+    ports:
+      - "8006:8000"
+    environment:
+      # Secrets
+      BASIC_AUTH_INTERNAL_USERNAME: admin
+      BASIC_AUTH_INTERNAL_PASSWORD: admin
+      MONGODB_USER: 'root'
+      MONGODB_PASS: 'password'
+      TIMESCALEDB_USER: 'root'
+      TIMESCALEDB_PASS: 'password'
+      CONTRACT_SERVICE_USERNAME: 'admin'
+      CONTRACT_SERVICE_PASSWORD: 'admin'
+      DECODER_USERNAME: 'admin'
+      DECODER_PASSWORD: 'admin'
+
+      PORT: '8000'
+      NODE_ENV: 'production'
+      TIMESCALEDB_URL: 'host.docker.internal:5432'
+      TIMESCALEDB_NAME: 'tsdb'
+      DISABLE_TIMESCALE_SSL: 'true'
+      SERVICE_NAME: 'metric-ingestion-service'
+      MONGODB_URL: 'host.docker.internal:27017'
+      MONGODB_NAME: 'prod'
+      MONGODB_CONNECTION_TYPE: 'mongodb'
+      MONGODB_CONNECTION_PARAMS: 'retryWrites=true'
+      TIMESCALEDB_CONNECTION_TYPE: 'postgres'
+      CONTRACT_SERVICE_BASEURL: 'http://host.docker.internal:8000'
+      THREAD_COUNT: '6'
+      DECODER_URL: 'http://host.docker.internal:8005'
+    depends_on:
+      - mongodb
+      - timescale
+      - contract-subgraph
+      - decoder-service
+  decoder-service:
+    image: blocktorch/decoder-service:0.0.4-SNAPSHOT
+    ports:
+      - "8005:8000"
+    environment:
+      # Secrets
+      PORT: '8000'
+      BASIC_AUTH_INTERNAL_USERNAME: 'admin'
+      BASIC_AUTH_INTERNAL_PASSWORD: 'admin'
+      CONTRACT_SERVICE_USERNAME: 'admin'
+      CONTRACT_SERVICE_PASSWORD: 'admin'
+      MONGODB_PASS: 'password'
+      STORAGE_ABI_PASS: 'password'
+      CHAIN_TO_PROVIDER_URL_MAP: '{}' # todo: remove
+
+      SERVICE_NAME: 'decoder-service'
+      MONGODB_CONNECTION_TYPE: 'mongodb'
+      MONGODB_USER: 'root'
+      MONGODB_URL: 'host.docker.internal:27017'
+      MONGODB_CONNECTION_PARAMS: 'retryWrites=true'
+      MONGODB_NAME: 'prod'
+      STORAGE_ABI_CONNECTION_TYPE: 'mongodb'
+      STORAGE_ABI_USER: 'root'
+      STORAGE_ABI_URL: 'host.docker.internal:27017'
+      STORAGE_ABI_CONNECTION_PARAMS: 'retryWrites=true'
+      STORAGE_ABI_NAME: 'prod'
+      CONTRACT_SERVICE_BASEURL: 'http://host.docker.internal:8000'
+      PROXY_MAPPING_COLLECTION: 'contractProxyMapping'
+    depends_on:
+      - mongodb
+      - contract-subgraph
+  block-subgraph:
+    image: blocktorch/block-subgraph:0.0.1-SNAPSHOT
+    ports:
+      - "8004:8000"
+    environment:
+      # Secrets
+      BASIC_AUTH_INTERNAL_USERNAME: 'admin'
+      BASIC_AUTH_INTERNAL_PASSWORD: 'admin'
+      MONGODB_PASS: 'password'
+      CONTRACT_SERVICE_USERNAME: 'admin'
+      CONTRACT_SERVICE_PASSWORD: 'admin'
+
+      PORT: '8000'
+      SERVICE_NAME: 'block-subgraph'
+      MONGODB_URL: 'host.docker.internal:27017'
+      MONGODB_USER: 'root'
+      MONGODB_NAME: 'prod'
+      MONGODB_CONNECTION_TYPE: 'mongodb'
+      MONGODB_CONNECTION_PARAMS: 'retryWrites=true'
+      CONTRACT_SERVICE_BASEURL: 'http://host.docker.internal:8000'
+    depends_on:
+      - mongodb
+      - contract-subgraph
+  rpc-block-collector:
+    image: blocktorch/rpc-block-collector:0.0.1
+    ports:
+      - "8003:8000"
+    environment:
+      # Secret
+      BASIC_AUTH_INTERNAL_USERNAME: 'admin'
+      BASIC_AUTH_INTERNAL_PASSWORD: 'admin'
+      MONGODB_PASS: 'password'
+      METRIC_INGESTION_SERVICE_AUTH_USER: 'admin'
+      METRIC_INGESTION_SERVICE_AUTH_PASSWORD: 'admin'
+
+      PORT: '8000'
+      SERVICE_NAME: 'rpc-block-collector'
+      MONGODB_URL: 'host.docker.internal:27017'
+      MONGODB_USER: 'root'
+      MONGODB_NAME: 'prod'
+      MONGODB_CONNECTION_TYPE: 'mongodb'
+      MONGODB_CONNECTION_PARAMS: 'retryWrites=true'
+      NUMBER_OF_RECENT_BLOCKS_TO_PROCESS: '100'
+      MAXIMUM_BLOCKS_IN_MEMORY_PER_REQUEST: '10'
+      BLOCKS_COLLECTION: 'blocks.custom_rpc'
+      BLOCK_ADDRESS_MAPPING_COLLECTION: 'blockNumberAddressMapping'
+      METRIC_INGESTION_SERVICE_BASE_URL: 'http://host.docker.internal:8006'
+    depends_on:
+      - mongodb
+      - metric-ingestion-service
+  metrics-subgraph:
+    image: blocktorch/metrics-subgraph:0.0.9-SNAPSHOT
+    ports:
+      - "8008:8000"
+    environment:
+      # Secrets
+      BASIC_AUTH_INTERNAL_USERNAME: 'admin'
+      BASIC_AUTH_INTERNAL_PASSWORD: 'admin'
+      TIMESCALE_USERNAME: 'root'
+      TIMESCALE_PASSWORD: 'password'
+
+      PORT: '8000'
+      SERVICE_NAME: 'metrics-subgraph'
+      MAX_POOL_SIZE: '10'
+      TIMESCALE_HOST: 'timescale'
+      TIMESCALE_PORT: '5432'
+      TIMESCALE_DATABASE: 'tsdb'
+    depends_on:
+      - timescale
+  query-subgraph:
+    image: blocktorch/query-subgraph:0.0.6-SNAPSHOT
+    ports:
+      - "8001:8000"
+    environment:
+      # Secrets
+      BASIC_AUTH_INTERNAL_USERNAME: 'admin'
+      BASIC_AUTH_INTERNAL_PASSWORD: 'admin'
+      MONGODB_PASS: 'password'
+      QUERY_ENGINE_SERVICE_USERNAME: 'admin'
+      QUERY_ENGINE_SERVICE_PASSWORD: 'admin'
+      METRICS_SUBGRAPH_USERNAME: 'admin'
+      METRICS_SUBGRAPH_PASSWORD: 'admin'
+
+      PORT: '8000'
+      SERVICE_NAME: 'query-subgraph'
+      MONGODB_URL: 'host.docker.internal:27017'
+      MONGODB_NAME: 'prod'
+      MONGODB_CONNECTION_TYPE: 'mongodb'
+      MONGODB_CONNECTION_PARAMS: 'retryWrites=true'
+      MONGODB_USER: 'root'
+      QUERY_ENGINE_SERVICE_BASEURL: 'http://host.docker.internal:8007'
+      METRICS_SUBGRAPH_BASEURL: 'http://host.docker.internal:8008'
+    depends_on:
+      - mongodb
+#      - query-engine
+      - metrics-subgraph
+  custom-chain-ingestion-job:
+    image: blocktorch/custom-chain-ingestion-job:0.0.1-SNAPSHOT
+#    ports:
+#      - "8009:8000"
+    environment:
+      # Secrets
+      MONGODB_PASS: 'password'
+      METRIC_INGESTION_SERVICE_AUTH_USER: 'admin'
+      METRIC_INGESTION_SERVICE_AUTH_PASSWORD: 'admin'
+      CONTRACT_SUBGRAPH_SERVICE_AUTH_USER: 'admin'
+      CONTRACT_SUBGRAPH_SERVICE_AUTH_PASSWORD: 'admin'
+      CUSTOM_BLOCK_COLLECTION_SERVICE_AUTH_USER: 'admin'
+      CUSTOM_BLOCK_COLLECTION_SERVICE_AUTH_PASSWORD: 'admin'
+
+      SERVICE_NAME: 'custom-chain-ingestion-job'
+      MONGODB_URL: 'host.docker.internal:27017'
+      MONGODB_NAME: 'prod'
+      MONGODB_USER: 'root'
+      BLOCKS_COLLECTION: 'blocks.custom_rpc'
+      TIMESTAMPS_COLLECTION: 'block-watcher-latest-timestamps'
+      METRIC_INGESTION_SERVICE_BASE_URL: 'http://host.docker.internal:8006'
+      CONTRACT_SUBGRAPH_SERVICE_BASE_URL: 'http://host.docker.internal:8000'
+      CUSTOM_BLOCK_COLLECTION_SERVICE_BASE_URL: 'http://host.docker.internal:8003'
+      TRIGGER_METRIC_INGESTION_MAX_THREADS: '25'
+      CHAIN_INGESTION_MAX_THREADS: '5'
+      BLOCK_DB_LIMIT_ON_READ: '600'
+    restart: always
+  contract-subgraph:
+    image: blocktorch/contract-subgraph:0.0.11-SNAPSHOT
+    deploy:
+      resources:
+        reservations:
+          memory: 4000M
+    ports:
+      - "8000:8000"
+    environment:
+      # Secrets
+      BASIC_AUTH_INTERNAL_USERNAME: 'admin'
+      BASIC_AUTH_INTERNAL_PASSWORD: 'admin'
+      MONGODB_PASS: 'password'
+      CONTRACT_SERVICE_USERNAME: 'admin'
+      CONTRACT_SERVICE_PASSWORD: 'admin'
+      METRIC_INGESTION_USERNAME: 'admin'
+      METRIC_INGESTION_PASSWORD: 'admin'
+      MONGODB_BLOCKS_PASS: 'password'
+
+      PORT: '8000'
+      SERVICE_NAME: 'contract-subgraph'
+      MONGODB_URL: 'host.docker.internal:27017'
+      MONGODB_NAME: 'prod'
+      MONGODB_CONNECTION_TYPE: 'mongodb'
+      MONGODB_CONNECTION_PARAMS: 'retryWrites=true'
+      MONGODB_USER: 'root'
+      DIR_PREFIX: '/temp'
+      BACKFILL_ENABLED: 'true'
+      BACKFILL_BATCH_SIZE: '1000'
+      MONGODB_BLOCKS_URL: 'host.docker.internal:27017'
+      MONGODB_BLOCKS_USER: 'root'
+      MONGODB_BLOCKS_NAME: 'prod'
+      MONGODB_BLOCKS_CONNECTION_TYPE: 'mongodb'
+      MONGODB_BLOCKS_CONNECTION_PARAMS: 'retryWrites=true'
+      BACKFILL_BLOCKS_PER_REQUEST: '10'
+      METRIC_INGESTION_BASE_URL: 'http://host.docker.internal:8006'
+      RETRY_FETCH_SOURCECODE_COUNT: '4'
+      RETRY_FETCH_SOURCECODE_DELAY: '1200'
+      NODE_MEMORY_LIMIT: '4000'
+      NODE_OPTIONS: "--max-old-space-size=4000"
+      DUMMY_PROJECT_ID_ACCOUNT_ABSTRACTION: 'ef0f593b-2f9e-4d98-aea0-5eeba0819839' #todo: remove
+      CHAIN_SCAN_DICT: '{}' #todo: remove
+    depends_on:
+      - mongodb
+#      - metric-ingestion-service
+  graphql-router:
+    image: ghcr.io/apollographql/router:v1.9.0
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./supergraph.graphql:/app/supergraph.graphql
+    command: ["-s", "/app/supergraph.graphql"]
+    depends_on:
+      - metrics-subgraph
+      - contract-subgraph
+      - query-subgraph
+      - block-subgraph

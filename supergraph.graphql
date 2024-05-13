@@ -1,0 +1,1003 @@
+schema
+  @link(url: "https://specs.apollo.dev/link/v1.0")
+  @link(url: "https://specs.apollo.dev/join/v0.2", for: EXECUTION)
+{
+  query: Query
+  mutation: Mutation
+}
+
+directive @join__field(graph: join__Graph!, requires: join__FieldSet, provides: join__FieldSet, type: String, external: Boolean, override: String, usedOverridden: Boolean) repeatable on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
+
+directive @join__graph(name: String!, url: String!) on ENUM_VALUE
+
+directive @join__implements(graph: join__Graph!, interface: String!) repeatable on OBJECT | INTERFACE
+
+directive @join__type(graph: join__Graph!, key: join__FieldSet, extension: Boolean! = false, resolvable: Boolean! = true) repeatable on OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR
+
+directive @link(url: String, as: String, for: link__Purpose, import: [link__Import]) repeatable on SCHEMA
+
+input AAComponents
+  @join__type(graph: QUERY)
+{
+  paymasters: [ContractsDimensionsInput!]
+  bundlers: [ContractsDimensionsInput!]
+  entrypoints: [ContractsDimensionsInput!]
+}
+
+enum AggregationType
+  @join__type(graph: QUERY)
+{
+  AVG
+  SUM
+  COUNT
+  MIN
+  MAX
+}
+
+type BlockExplorer
+  @join__type(graph: CONTRACT)
+{
+  type: BlockExplorerType!
+  url: String!
+  apiKey: String
+}
+
+input BlockExplorerInput
+  @join__type(graph: CONTRACT)
+{
+  type: BlockExplorerType!
+  url: String!
+  apiKey: String
+}
+
+enum BlockExplorerType
+  @join__type(graph: CONTRACT)
+{
+  etherscan
+  blockscout
+}
+
+type BlockHeaders
+  @join__type(graph: BLOCK)
+{
+  number: String!
+  timestamp: String!
+  extraData: String!
+  gasLimit: String!
+  gasUsed: String!
+  parentHash: String!
+  difficulty: ByteWrapper
+  baseFeePerGas: ByteWrapper
+}
+
+type BlockWithTransaction
+  @join__type(graph: BLOCK, key: "number")
+{
+  number: String!
+  chainId: String
+  detectedAt: String!
+  hash: String!
+  header: BlockHeaders!
+  transactionTraces: [Transactions]
+}
+
+type ByteWrapper
+  @join__type(graph: BLOCK)
+{
+  bytes: String
+}
+
+type Chain
+  @join__type(graph: CONTRACT, key: "id")
+{
+  id: ID!
+  network: String
+  chain: String
+  name: String!
+  chainType: String
+  externalId: String
+  externalIdHex: String
+  mainnet: Boolean
+  explorerUrl: String
+  explorerApiUrl: String
+  supportedInUi: Boolean
+  rpcUrl: String
+  forkableChainReference: ForkableChainReference
+  projectId: String
+  reference: String
+  tags: [String]
+  createdAt: String
+  rollupSettings: RollupSettings
+  blockExplorer: BlockExplorer
+  limits: ChainLimits
+}
+
+type ChainDeletionResult
+  @join__type(graph: CONTRACT)
+{
+  success: Boolean!
+  contractsDeletedCount: Int!
+}
+
+input ChainInput
+  @join__type(graph: CONTRACT)
+{
+  name: String!
+  rpcUrl: String!
+  projectId: String!
+  reference: String
+  tags: [String]
+  blockExplorer: BlockExplorerInput
+}
+
+type ChainLimits
+  @join__type(graph: CONTRACT)
+{
+  debugger: Int
+}
+
+type Conditions
+  @join__type(graph: QUERY)
+{
+  op: ConditionsOperator!
+  children: [ConditionsChildren!]!
+}
+
+union ConditionsChildren
+  @join__type(graph: QUERY)
+ = Conditions | StringCondition | NumberCondition
+
+scalar ConditionsChildrenForInput
+  @join__type(graph: QUERY)
+
+input ConditionsInput
+  @join__type(graph: QUERY)
+{
+  op: ConditionsOperator!
+  children: [ConditionsChildrenForInput!]!
+}
+
+enum ConditionsOperator
+  @join__type(graph: QUERY)
+{
+  AND
+  OR
+}
+
+type Contract
+  @join__type(graph: CONTRACT, key: "id")
+{
+  id: ID!
+  smartContractAddress: String @deprecated
+  address: String
+  projectId: String!
+  blockchain: String @deprecated(reason: "Please use chain, this field will be removed in future release")
+  chain: Chain
+  abi: String!
+  name: String
+  createdAt: String
+}
+
+input ContractEventsInput
+  @join__type(graph: METRICS)
+{
+  contracts: [ContractWithChain!]!
+  search: String
+  start: String
+  end: String
+  limit: Int
+}
+
+type ContractEventsResult
+  @join__type(graph: METRICS)
+{
+  events: [String]
+}
+
+type ContractExistsResult
+  @join__type(graph: CONTRACT)
+{
+  address: String!
+  chainId: String
+  exists: Boolean!
+}
+
+input ContractFilterInput
+  @join__type(graph: CONTRACT)
+{
+  address: String!
+  chainId: ID
+}
+
+input ContractInput
+  @join__type(graph: CONTRACT)
+{
+  projectId: String!
+  smartContractAddress: String @deprecated
+  address: String!
+  blockchain: String @deprecated(reason: "Please use chainId, this field will be removed in future release")
+  chainId: ID!
+  abi: String!
+  name: String
+}
+
+type ContractsDimensions
+  @join__type(graph: QUERY)
+{
+  chain: String!
+  address: String!
+}
+
+input ContractsDimensionsInput
+  @join__type(graph: QUERY)
+{
+  chain: ID!
+  address: String!
+}
+
+type ContractsResponse
+  @join__type(graph: CONTRACT)
+{
+  projectContracts: [Contract]
+  demoContracts: [Contract]
+}
+
+type ContractsSourceCode
+  @join__type(graph: CONTRACT)
+{
+  contractSourceCodeMap: JSON
+  debuggerSteps: [DebuggerStep]
+}
+
+input ContractVariablesInput
+  @join__type(graph: METRICS)
+{
+  contracts: [ContractWithChain!]!
+  search: String
+  start: String
+  end: String
+  limit: Int
+}
+
+type ContractVariablesResult
+  @join__type(graph: METRICS)
+{
+  variables: [String]
+}
+
+input ContractWithChain
+  @join__type(graph: METRICS)
+{
+  chain: String!
+  address: String!
+}
+
+input ContractWithoutProjectIdInput
+  @join__type(graph: CONTRACT)
+{
+  address: String!
+  chainId: ID!
+  projectType: DummyProjectType!
+  fetchAbi: Boolean
+  abi: String
+}
+
+input CreateQueryInput
+  @join__type(graph: QUERY)
+{
+  userId: ID!
+  projectId: ID!
+  title: String
+  timeWindow: Int!
+  targetValue: Float!
+  subqueries: [SubqueryByKeyInput!]!
+  formula: String!
+}
+
+input DashboardMetricsInput
+  @join__type(graph: QUERY)
+{
+  dimensions: DimensionsInput!
+  group: MetricsGroup
+  startDate: String!
+  endDate: String
+  version: Int
+}
+
+type DataPoint
+  @join__type(graph: METRICS)
+{
+  date: String
+  avg: Float
+  sum: Float
+  min: Float
+  max: Float
+  count: Float
+  value: String
+}
+
+type DebuggerStep
+  @join__type(graph: CONTRACT)
+{
+  fileName: String
+  name: String
+  line: Int
+  type: String
+  id: String
+  parentId: String
+  childrenIds: [String]
+  sourceRange: DebuggerStepSourceRange
+}
+
+type DebuggerStepSourceRange
+  @join__type(graph: CONTRACT)
+{
+  length: Int
+  start: Int
+  lines: DebuggerStepSourceRangeLines
+}
+
+type DebuggerStepSourceRangeLine
+  @join__type(graph: CONTRACT)
+{
+  column: Int
+  line: Int
+}
+
+type DebuggerStepSourceRangeLines
+  @join__type(graph: CONTRACT)
+{
+  start: DebuggerStepSourceRangeLine
+  end: DebuggerStepSourceRangeLine
+}
+
+type Dimensions
+  @join__type(graph: QUERY)
+{
+  contracts: [ContractsDimensions!]!
+  events: [String!]
+  signatures: [String!]
+  names: [String!]
+}
+
+input DimensionsInput
+  @join__type(graph: QUERY)
+{
+  contracts: [ContractsDimensionsInput!]!
+  events: [String!]
+  signatures: [String!]
+  names: [String!]
+}
+
+input DimensionsInputForMetricSubgraph
+  @join__type(graph: METRICS)
+{
+  contracts: [ContractWithChain!]
+  events: [String!]
+  signatures: [String!]
+  names: [String!]
+}
+
+enum DummyProjectType
+  @join__type(graph: CONTRACT)
+{
+  accountAbstraction
+}
+
+enum ForkableChainReference
+  @join__type(graph: CONTRACT)
+{
+  ethMainnet
+  ethSepolia
+  polygonMainnet
+  polygonMumbai
+  optimismMainnet
+  optimismSepolia
+  arbitrumMainnet
+  arbitrumSepolia
+  polygonZkEvmMainnet
+}
+
+input GetMetricsPayload
+  @join__type(graph: METRICS)
+{
+  metric: String!
+  aggregationType: MetricsAggregationType
+  dimensions: DimensionsInputForMetricSubgraph!
+  start: String!
+  end: String!
+  interval: Int
+  groupBy: [GroupBy]
+  orderBy: OrderBy
+  gapFill: Boolean
+  roundTimeBounds: Boolean
+  version: Int
+}
+
+type Graph
+  @join__type(graph: QUERY)
+{
+  title: String!
+  unit: String
+  description: String
+  series: [SeriesDataModel]!
+}
+
+type Graphs
+  @join__type(graph: QUERY)
+{
+  graphs: [Graph]
+}
+
+enum GroupBy
+  @join__type(graph: METRICS)
+  @join__type(graph: QUERY)
+{
+  time
+  blockchain
+  address
+  signature
+  type
+  name
+}
+
+type GroupedMetric
+  @join__type(graph: METRICS)
+{
+  groupKey: String
+  metrics: [DataPoint]!
+}
+
+enum HomeGraphGroup
+  @join__type(graph: QUERY)
+{
+  HEALTH
+  PERFORMANCE
+  EFFICIENCY
+}
+
+input HomeGraphInput
+  @join__type(graph: QUERY)
+{
+  dimensions: DimensionsInput!
+  timeRangeInMin: Int!
+  ticks: Int @deprecated
+  graphGroup: HomeGraphGroup!
+  version: Int
+}
+
+type HomeGraphModel
+  @join__type(graph: QUERY)
+{
+  graphs: [HomePageGraphModel]
+}
+
+input HomeLeaderboardInput
+  @join__type(graph: QUERY)
+{
+  dimensions: DimensionsInput!
+  timeRangeInMin: Int!
+  graphGroup: HomeGraphGroup!
+  version: Int
+}
+
+type HomeLeaderboardModel
+  @join__type(graph: QUERY)
+{
+  leaderboards: [HomePageLeaderboardModel]
+}
+
+type HomePageGraphModel
+  @join__type(graph: QUERY)
+{
+  title: String!
+  unit: String!
+  description: String
+  data: [PreviewDataModel]
+  series: [SeriesDataModel]
+}
+
+type HomePageLeaderboardModel
+  @join__type(graph: QUERY)
+{
+  title: String!
+  description: String
+  data: [LeaderboardDataModel]
+}
+
+type HomePageStatisticModel
+  @join__type(graph: QUERY)
+{
+  title: String!
+  value: String!
+  unit: String!
+  description: String
+}
+
+input HomeStatisticInput
+  @join__type(graph: QUERY)
+{
+  dimensions: DimensionsInput!
+  timeRangeInMin: Int!
+  version: Int
+}
+
+type HomeStatisticModel
+  @join__type(graph: QUERY)
+{
+  statistics: [HomePageStatisticModel]
+}
+
+scalar join__FieldSet
+
+enum join__Graph {
+  BLOCK @join__graph(name: "block", url: "http://host.docker.internal:8004/graphql")
+  CONTRACT @join__graph(name: "contract", url: "http://host.docker.internal:8000/graphql")
+  METRICS @join__graph(name: "metrics", url: "http://host.docker.internal:8008/graphql")
+  QUERY @join__graph(name: "query", url: "http://host.docker.internal:8001/graphql")
+}
+
+scalar JSON
+  @join__type(graph: CONTRACT)
+
+type LatestBlock
+  @join__type(graph: BLOCK)
+{
+  number: String
+}
+
+type LeaderboardDataModel
+  @join__type(graph: QUERY)
+{
+  label: String!
+  value: Float!
+}
+
+type Leaderboards
+  @join__type(graph: QUERY)
+{
+  leaderboards: [HomePageLeaderboardModel]
+}
+
+scalar link__Import
+
+enum link__Purpose {
+  """
+  `SECURITY` features provide metadata necessary to securely resolve fields.
+  """
+  SECURITY
+
+  """
+  `EXECUTION` features provide metadata necessary for operation execution.
+  """
+  EXECUTION
+}
+
+enum MetricsAggregationType
+  @join__type(graph: METRICS)
+{
+  AVG
+  SUM
+  COUNT
+  MIN
+  MAX
+}
+
+enum MetricsGroup
+  @join__type(graph: QUERY)
+{
+  PAYMASTER
+  BUNDLER
+}
+
+type MetricsResult
+  @join__type(graph: METRICS)
+{
+  metric: String!
+  aggregationType: MetricsAggregationType!
+  start: String!
+  end: String!
+  interval: Int
+  data: [GroupedMetric]!
+}
+
+type Mutation
+  @join__type(graph: CONTRACT)
+  @join__type(graph: QUERY)
+{
+  createContract(contract: ContractInput): Contract @join__field(graph: CONTRACT)
+  createContractInDummyProject(contract: ContractWithoutProjectIdInput): Contract @join__field(graph: CONTRACT)
+  updateContract(contract: UpdateContractInput): Contract @join__field(graph: CONTRACT)
+  deleteContract(projectId: ID!, contractId: ID!): Boolean @join__field(graph: CONTRACT)
+  deleteAllContracts(projectId: ID!): Boolean @join__field(graph: CONTRACT)
+  createChain(chain: ChainInput): Chain @join__field(graph: CONTRACT)
+  deleteChain(chainId: ID!, projectId: ID!): ChainDeletionResult @join__field(graph: CONTRACT)
+  addRollupBatcher(input: RollupBatcherInput!): Chain @join__field(graph: CONTRACT)
+  updateRollupComponent(input: RollupComponentsInput!): Chain @join__field(graph: CONTRACT)
+  simulateTransaction(input: SimulationInput!): SimulationResult @join__field(graph: CONTRACT)
+  createQuery(query: CreateQueryInput): QueryModel @join__field(graph: QUERY)
+  updateQuery(query: UpdateQueryInput): QueryModel @join__field(graph: QUERY)
+  deleteQuery(projectId: ID!, queryId: ID!): Boolean @join__field(graph: QUERY)
+  deleteAllQueries(projectId: ID!): Boolean @join__field(graph: QUERY)
+}
+
+type NumberCondition
+  @join__type(graph: QUERY)
+{
+  metric: String!
+  op: Operator!
+  value: Float!
+}
+
+enum Operator
+  @join__type(graph: QUERY)
+{
+  EQ
+  NEQ
+  GT
+  LT
+  GTE
+  LTE
+}
+
+enum OrderBy
+  @join__type(graph: METRICS)
+{
+  time
+}
+
+input PaginationInput
+  @join__type(graph: CONTRACT)
+{
+  offset: Int
+  limit: Int
+}
+
+type PreviewDataModel
+  @join__type(graph: QUERY)
+{
+  x: String!
+  y: Float
+}
+
+type Query
+  @join__type(graph: BLOCK)
+  @join__type(graph: CONTRACT)
+  @join__type(graph: METRICS)
+  @join__type(graph: QUERY)
+{
+  getTransactionBlock(chainId: String!, blockNumber: String!, transactionHash: String!): BlockWithTransaction @join__field(graph: BLOCK)
+  getTransactionTraces(chainId: String!, blockNumber: String!, transactionHash: String!): String @join__field(graph: BLOCK)
+  getLatestBlock(chainId: String!): LatestBlock @join__field(graph: BLOCK)
+  contract(contractId: String, projectId: String): Contract @join__field(graph: CONTRACT)
+  contracts(projectId: String): ContractsResponse @join__field(graph: CONTRACT)
+  contractsExist(contracts: [ContractFilterInput]!): [ContractExistsResult] @join__field(graph: CONTRACT)
+  chains(projectId: String, pagination: PaginationInput): [Chain] @join__field(graph: CONTRACT)
+  chain(projectId: String, chainId: String): Chain @join__field(graph: CONTRACT)
+  contractSourceCodes(chainId: ID!, contractAddresses: [String!]!, txHash: String): ContractsSourceCode @join__field(graph: CONTRACT)
+  getMetrics(payload: GetMetricsPayload!): MetricsResult @join__field(graph: METRICS)
+  contractVariables(input: ContractVariablesInput!): ContractVariablesResult @join__field(graph: METRICS)
+  contractEvents(input: ContractEventsInput!): ContractEventsResult @join__field(graph: METRICS)
+  search(input: SearchInput!): SearchResults @join__field(graph: METRICS)
+  query(projectId: String, queryId: String): QueryModel @join__field(graph: QUERY)
+  queryPreview(query: CreateQueryInput, timeRangeInMin: Int, ticks: Int): [SeriesDataModel] @join__field(graph: QUERY)
+  homeStatistics(input: HomeStatisticInput): HomeStatisticModel @join__field(graph: QUERY)
+  homeGraphs(input: HomeGraphInput): HomeGraphModel @join__field(graph: QUERY)
+  homeLeaderboards(input: HomeLeaderboardInput): HomeLeaderboardModel @join__field(graph: QUERY)
+  queries(projectId: String): [QueryModel] @join__field(graph: QUERY)
+  aaGraphs(input: DashboardMetricsInput!, components: AAComponents!): Graphs @join__field(graph: QUERY)
+  aaStatistics(input: DashboardMetricsInput!, components: AAComponents!): Statistics @join__field(graph: QUERY)
+  aaLeaderboards(input: DashboardMetricsInput!): Leaderboards @join__field(graph: QUERY)
+}
+
+type QueryModel
+  @join__type(graph: QUERY, key: "id")
+{
+  id: ID!
+  title: String
+  userId: ID!
+  projectId: ID!
+  timeWindow: Int!
+  targetValue: Float!
+  subqueries: [SubqueryByKey!]!
+  formula: String!
+}
+
+input RollupBatcherInput
+  @join__type(graph: CONTRACT)
+{
+  chainId: ID!
+  projectId: ID!
+  batcher: String!
+}
+
+input RollupComponent
+  @join__type(graph: CONTRACT)
+{
+  name: String!
+  address: String!
+}
+
+input RollupComponentsInput
+  @join__type(graph: CONTRACT)
+{
+  chainId: ID!
+  projectId: ID!
+  components: [RollupComponent]!
+}
+
+type RollupSettings
+  @join__type(graph: CONTRACT)
+{
+  status: RollupSettingsStatus
+  batcher: String
+  components: [RollupSettingsComponents]
+}
+
+type RollupSettingsComponents
+  @join__type(graph: CONTRACT)
+{
+  name: String
+  address: String
+}
+
+enum RollupSettingsStatus
+  @join__type(graph: CONTRACT)
+{
+  new
+  pending
+  ready
+}
+
+input SearchInput
+  @join__type(graph: METRICS)
+{
+  start: String!
+  end: String!
+  chainIds: [String]
+  hashes: [String]
+  froms: [ContractWithChain!]
+  tos: [ContractWithChain!]
+  statuses: [String]
+  includeEvents: Boolean
+  includeErrors: Boolean
+  limit: Int
+  page: Int
+}
+
+interface SearchResult
+  @join__type(graph: METRICS)
+{
+  hash: String!
+  date: String!
+  chainId: String!
+  signature: String
+}
+
+type SearchResultError implements SearchResult
+  @join__implements(graph: METRICS, interface: "SearchResult")
+  @join__type(graph: METRICS)
+{
+  hash: String!
+  date: String!
+  chainId: String!
+  contract: String!
+  signature: String
+}
+
+type SearchResultEvent implements SearchResult
+  @join__implements(graph: METRICS, interface: "SearchResult")
+  @join__type(graph: METRICS)
+{
+  hash: String!
+  date: String!
+  chainId: String!
+  ordinal: String!
+  emitter: String!
+  signature: String
+}
+
+type SearchResults
+  @join__type(graph: METRICS)
+{
+  data: [SearchResult]
+}
+
+type SearchResultTransaction implements SearchResult
+  @join__implements(graph: METRICS, interface: "SearchResult")
+  @join__type(graph: METRICS)
+{
+  hash: String!
+  date: String!
+  block: Int!
+  chainId: String!
+  status: String!
+  from: String!
+  to: String!
+  gasUsed: String
+  index: Int
+  value: String
+  gasPrice: String
+  maxFeePerGas: String
+  type: String
+  gasConsumed: String
+  gasLimit: String
+  initialGas: String
+  signature: String
+}
+
+type SeriesDataModel
+  @join__type(graph: QUERY)
+{
+  label: String
+  data: [PreviewDataModel]
+  chartType: String
+}
+
+type SimulationCallTrace
+  @join__type(graph: CONTRACT)
+{
+  from: String
+  to: String
+  functionName: String
+  input: String
+  type: String
+  gasUsed: String
+  id: String!
+  parentId: String
+  childrenIds: [String]!
+}
+
+input SimulationInput
+  @join__type(graph: CONTRACT)
+{
+  to: String!
+  from: String!
+  blockNumber: Int!
+  chainId: String!
+  value: String
+  callData: String
+  gasLimit: String
+  nonce: String
+  maxFeePerGas: String
+  maxPriorityFeePerGas: String
+}
+
+type SimulationReceipt
+  @join__type(graph: CONTRACT)
+{
+  cumulativeBlockGasUsed: String
+  logs: [SimulationReceiptLog]
+  status: String
+  gasUsed: String
+  gasPrice: String
+}
+
+type SimulationReceiptLog
+  @join__type(graph: CONTRACT)
+{
+  address: String!
+  topics: [String!]
+  data: String!
+}
+
+type SimulationResult
+  @join__type(graph: CONTRACT)
+{
+  receipt: SimulationReceipt
+  callTrace: [SimulationCallTrace]
+  debuggerSteps: [DebuggerStep]
+  contractSourceCodeMap: JSON
+}
+
+type Statistics
+  @join__type(graph: QUERY)
+{
+  statistics: [HomePageStatisticModel]
+}
+
+type StringCondition
+  @join__type(graph: QUERY)
+{
+  metric: String!
+  op: Operator!
+  value: String!
+}
+
+type Subquery
+  @join__type(graph: QUERY)
+{
+  dimensions: Dimensions!
+  metric: String!
+  aggregationFunction: AggregationType!
+  conditions: Conditions
+  groupBy: [GroupBy]
+}
+
+type SubqueryByKey
+  @join__type(graph: QUERY)
+{
+  key: String!
+  value: Subquery!
+}
+
+input SubqueryByKeyInput
+  @join__type(graph: QUERY)
+{
+  key: String!
+  value: SubqueryInput!
+}
+
+input SubqueryInput
+  @join__type(graph: QUERY)
+{
+  dimensions: DimensionsInput!
+  metric: String!
+  aggregationFunction: AggregationType!
+  conditions: ConditionsInput
+  groupBy: [GroupBy]
+}
+
+type TransactionLogs
+  @join__type(graph: BLOCK)
+{
+  address: String
+  topics: [String]
+  data: String
+}
+
+type TransactionReceipt
+  @join__type(graph: BLOCK)
+{
+  cumulativeGasUsed: String
+  logsBloom: String
+  logs: [TransactionLogs]
+}
+
+type Transactions
+  @join__type(graph: BLOCK)
+{
+  hash: String!
+  to: String!
+  from: String!
+  nonce: String!
+  gasLimit: String
+  gasUsed: String
+  input: String
+  status: String!
+  index: Int!
+  receipt: TransactionReceipt
+  value: ByteWrapper
+  gasPrice: ByteWrapper
+  maxFeePerGas: ByteWrapper
+  maxPriorityFeePerGas: ByteWrapper
+  v: String!
+  r: String!
+  s: String!
+}
+
+input UpdateContractInput
+  @join__type(graph: CONTRACT)
+{
+  id: ID!
+  projectId: String!
+  smartContractAddress: String @deprecated
+  address: String
+  blockchain: String @deprecated(reason: "Please use chainId, this field will be removed in future release")
+  chainId: ID
+  abi: String
+  name: String
+}
+
+input UpdateQueryInput
+  @join__type(graph: QUERY)
+{
+  id: ID!
+  userId: ID
+  projectId: ID!
+  title: String
+  timeWindow: Int
+  targetValue: Float
+  subqueries: [SubqueryByKeyInput!]
+  formula: String
+}
