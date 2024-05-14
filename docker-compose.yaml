@@ -285,8 +285,8 @@ services:
       METRIC_INGESTION_BASE_URL: 'http://host.docker.internal:8006'
       RETRY_FETCH_SOURCECODE_COUNT: '4'
       RETRY_FETCH_SOURCECODE_DELAY: '1200'
-      NODE_MEMORY_LIMIT: '4000'
-      NODE_OPTIONS: "--max-old-space-size=4000"
+      NODE_MEMORY_LIMIT: '6000'
+      NODE_OPTIONS: "--max-old-space-size=6000"
       DUMMY_PROJECT_ID_ACCOUNT_ABSTRACTION: 'ef0f593b-2f9e-4d98-aea0-5eeba0819839' #todo: remove
       CHAIN_SCAN_DICT: '{}' #todo: remove
     depends_on:
@@ -296,9 +296,12 @@ services:
     image: ghcr.io/apollographql/router:v1.9.0
     ports:
       - "4000:4000"
+    environment:
+      PORT: '4000'
     volumes:
+      - ./gql-config.yaml:/app/config.yaml
       - ./supergraph.graphql:/app/supergraph.graphql
-    command: ["-s", "/app/supergraph.graphql"]
+    command: ["-s", "/app/supergraph.graphql", "-c", "/app/config.yaml"]
     depends_on:
       - metrics-subgraph
       - contract-subgraph

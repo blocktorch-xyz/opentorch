@@ -109,7 +109,6 @@ type Chain
   createdAt: String
   rollupSettings: RollupSettings
   blockExplorer: BlockExplorer
-  limits: ChainLimits
 }
 
 type ChainDeletionResult
@@ -128,12 +127,6 @@ input ChainInput
   reference: String
   tags: [String]
   blockExplorer: BlockExplorerInput
-}
-
-type ChainLimits
-  @join__type(graph: CONTRACT)
-{
-  debugger: Int
 }
 
 type Conditions
