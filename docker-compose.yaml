@@ -307,3 +307,13 @@ services:
       - contract-subgraph
       - query-subgraph
       - block-subgraph
+  blocktorch-ui:
+    image: blocktorch/blocktorch-ui:latest
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: '3000'
+      NEXT_PUBLIC_GRAPHQL_PUBLIC_HOST: http://host.docker.internal:4000
+      GRAPHQL_HOST: http://host.docker.internal:4000
+    depends_on:
+      - graphql-router
