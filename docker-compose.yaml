@@ -169,6 +169,7 @@ services:
       NUMBER_OF_RECENT_BLOCKS_TO_PROCESS: '100'
       MAXIMUM_BLOCKS_IN_MEMORY_PER_REQUEST: '10'
       BLOCKS_COLLECTION: 'blocks.custom_rpc'
+      DAYS_TO_STORE_BLOCKS_FOR: '3'
       BLOCK_ADDRESS_MAPPING_COLLECTION: 'blockNumberAddressMapping'
       METRIC_INGESTION_SERVICE_BASE_URL: 'http://host.docker.internal:8006'
     depends_on:
@@ -279,6 +280,7 @@ services:
       MONGODB_BLOCKS_NAME: 'prod'
       MONGODB_BLOCKS_CONNECTION_TYPE: 'mongodb'
       MONGODB_BLOCKS_CONNECTION_PARAMS: 'retryWrites=true'
+      DAYS_TO_STORE_MAPPINGS_FOR: '30'
       BACKFILL_BLOCKS_PER_REQUEST: '10'
       METRIC_INGESTION_BASE_URL: 'http://host.docker.internal:8006'
       RETRY_FETCH_SOURCECODE_COUNT: '4'

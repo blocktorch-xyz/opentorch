@@ -34,5 +34,10 @@ Host i-* mi-*
 - Use `npm run dry-run` to test what will happen and only print the SQL
   - `npm run dry-run up`
   - `npm run dry-run down`
+  
+### How to change retention policies or chunck time intervals?
+`migrations` directory has all the scripts setting up the configuration of your Timescale deployment.
+- for the main tables `RETENTION_LENGTH` and `CHUNK_TIME_INTERVAL` are the relevant ones to set.
+- for the rollup tables `ROLLUPS` dictionary in the migrations scripts is the one to look into so to adjust intervals, offsets and retention settings
 
 See the available commands [here](https://salsita.github.io/node-pg-migrate/#/cli)
