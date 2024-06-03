@@ -109,6 +109,7 @@ type Chain
   createdAt: String
   rollupSettings: RollupSettings
   blockExplorer: BlockExplorer
+  explorerOnly: Boolean
 }
 
 type ChainDeletionResult
@@ -127,6 +128,7 @@ input ChainInput
   reference: String
   tags: [String]
   blockExplorer: BlockExplorerInput
+  explorerOnly: Boolean = true
 }
 
 type Conditions
@@ -854,12 +856,12 @@ input SimulationInput
   nonce: String
   maxFeePerGas: String
   maxPriorityFeePerGas: String
+  callerBalanceToSet: String
 }
 
 type SimulationReceipt
   @join__type(graph: CONTRACT)
 {
-  cumulativeBlockGasUsed: String
   logs: [SimulationReceiptLog]
   status: String
   gasUsed: String
