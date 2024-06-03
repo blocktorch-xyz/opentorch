@@ -218,12 +218,9 @@ services:
       METRICS_SUBGRAPH_BASEURL: 'http://host.docker.internal:8008'
     depends_on:
       - mongodb
-#      - query-engine
       - metrics-subgraph
   custom-chain-ingestion-job:
     image: blocktorch/custom-chain-ingestion-job:0.0.1-SNAPSHOT
-#    ports:
-#      - "8009:8000"
     environment:
       # Secrets
       MONGODB_PASS: 'password'
@@ -246,6 +243,7 @@ services:
       TRIGGER_METRIC_INGESTION_MAX_THREADS: '25'
       CHAIN_INGESTION_MAX_THREADS: '5'
       BLOCK_DB_LIMIT_ON_READ: '600'
+      INGESTION_INTERVAL_IN_SEC: '30'
     restart: always
   contract-subgraph:
     image: blocktorch/contract-subgraph:0.0.11-SNAPSHOT
@@ -291,7 +289,6 @@ services:
       CHAIN_SCAN_DICT: '{}' #todo: remove
     depends_on:
       - mongodb
-#      - metric-ingestion-service
   graphql-router:
     image: ghcr.io/apollographql/router:v1.9.0
     ports:
