@@ -110,6 +110,7 @@ type Chain
   rollupSettings: RollupSettings
   blockExplorer: BlockExplorer
   explorerOnly: Boolean
+  imageUrl: String
 }
 
 type ChainDeletionResult
@@ -129,6 +130,7 @@ input ChainInput
   tags: [String]
   blockExplorer: BlockExplorerInput
   explorerOnly: Boolean = true
+  imageUrl: String
 }
 
 type Conditions
